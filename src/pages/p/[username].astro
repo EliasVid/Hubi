@@ -74,7 +74,8 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, profil
               class="w-full bg-white border border-slate-200 hover:border-[#b81120] hover:shadow-md transition-all duration-200 rounded-2xl p-4 flex items-center justify-between group cursor-pointer"
             >
               <div class="w-10 h-10 rounded-xl bg-red-50 text-[#b81120] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-xl">link</span>
+                <!-- DYNAMIC ICON ADDED HERE -->
+                <span class="material-symbols-outlined text-xl">{link.icon || 'language'}</span>
               </div>
               <div class="flex-1 min-w-0 px-4 text-left">
                 <h2 class="text-sm font-bold text-slate-900 group-hover:text-[#b81120] transition-colors truncate">{link.title}</h2>

@@ -2,9 +2,9 @@
 // src/pages/admin/index.astro
 import Layout from '../../layouts/Layout.astro';
 import { drizzle } from 'drizzle-orm/d1';
-import { eq } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { sessions, profiles, links } from '../../db/schema';
+import { asc, eq } from 'drizzle-orm';
 
 // 1. Get the session cookie
 const sessionToken = Astro.cookies.get('nfc_hub_session')?.value;
@@ -31,8 +31,8 @@ const userProfile = profileResult[0];
 // Use DB avatar if it exists, otherwise fall back to UI-Avatars
 const avatarSource = userProfile.avatarUrl || `https://ui-avatars.com/api/?name=${userProfile.displayName}&background=b81120&color=fff&size=128`;
 
-// 4. Fetch the User's Links
-const userLinks = await db.select().from(links).where(eq(links.profileId, userProfile.id));
+// 4. Fetch the User's Links (Ordered by position for drag-and-drop!)
+const userLinks = await db.select().from(links).where(eq(links.profileId, userProfile.id)).orderBy(asc(links.position));
 ---
 
 <Layout title="Admin Dashboard | Hubi">
@@ -129,6 +129,19 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
               <!-- HIDDEN ID FIELD FOR EDITING -->
               <input type="hidden" name="id" id="edit-link-id" value="" />
               
+              <!-- NEW ICON SELECTOR -->
+              <div class="w-full sm:w-28 shrink-0">
+                <label class="block text-sm font-semibold text-slate-600 mb-1">Icon</label>
+                <select id="link-icon-input" name="icon" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/10" style="font-family: 'Material Symbols Outlined', sans-serif;">
+                  <option value="language">Website</option>
+                  <option value="work">Portfolio</option>
+                  <option value="photo_camera">Instagram</option>
+                  <option value="chat">WhatsApp</option>
+                  <option value="mail">Email</option>
+                  <option value="play_arrow">YouTube</option>
+                </select>
+              </div>
+
               <div class="flex-1 w-full">
                 <label class="block text-sm font-semibold text-slate-600 mb-1">Title</label>
                 <input id="link-title-input" name="title" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/10" placeholder="My Portfolio" type="text" required/>
@@ -146,26 +159,28 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
 
           <section>
             <h3 class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Active Links</h3>
-            <div class="space-y-3">
+            <!-- ADDED id="links-list" FOR DRAG & DROP -->
+            <div id="links-list" class="space-y-3">
               
               {userLinks.length === 0 ? (
                 <p class="text-sm text-slate-500 italic">No links added yet. Add your first link above!</p>
               ) : (
                 userLinks.map((link) => (
-                  <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex items-center gap-3 hover:border-b-2 hover:border-b-[#b81120] transition-all">
-                    <div class="cursor-grab text-slate-400">
+                  <div class="link-item bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex items-center gap-3 hover:border-b-2 hover:border-b-[#b81120] transition-all" data-id={link.id}>
+                    <div class="cursor-grab text-slate-400 active:cursor-grabbing hover:text-slate-600">
                       <span class="material-symbols-outlined">drag_indicator</span>
                     </div>
                     <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                      <span class="material-symbols-outlined text-slate-600">language</span>
+                      <!-- DYNAMIC ICON -->
+                      <span class="material-symbols-outlined text-slate-600">{link.icon || 'language'}</span>
                     </div>
                     <div class="flex-1 min-w-0">
                       <h4 class="text-sm font-bold text-slate-900 truncate">{link.title}</h4>
                       <p class="text-xs text-slate-500 truncate">{link.url}</p>
                     </div>
                     <div class="flex items-center gap-2">
-                      <!-- EDIT AND DELETE BUTTONS WITH DATA ATTRIBUTES -->
-                      <button class="edit-link-btn text-slate-400 hover:text-[#b81120] cursor-pointer" data-id={link.id} data-title={link.title} data-url={link.url}>
+                      <!-- ADDED data-icon -->
+                      <button class="edit-link-btn text-slate-400 hover:text-[#b81120] cursor-pointer" data-id={link.id} data-title={link.title} data-url={link.url} data-icon={link.icon || 'language'}>
                         <span class="material-symbols-outlined">edit</span>
                       </button>
                       <button class="delete-link-btn text-slate-400 hover:text-red-600 cursor-pointer" data-id={link.id}>
@@ -200,14 +215,47 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
   </div>
 </Layout>
 
+<!-- Drag and Drop Library -->
+<script is:inline src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
 <!-- JAVASCRIPT FOR CRUD OPERATIONS -->
 <script>
   const addLinkForm = document.getElementById('add-link-form') as HTMLFormElement;
   const editIdInput = document.getElementById('edit-link-id') as HTMLInputElement;
   const titleInput = document.getElementById('link-title-input') as HTMLInputElement;
   const urlInput = document.getElementById('link-url-input') as HTMLInputElement;
+  const iconInput = document.getElementById('link-icon-input') as HTMLSelectElement;
   const submitText = document.getElementById('submit-link-text');
   const submitIcon = document.getElementById('submit-link-icon');
+
+  // --- DRAG AND DROP REORDERING ---
+  const linksList = document.getElementById('links-list');
+  if (linksList) {
+    // @ts-ignore
+    new Sortable(linksList, {
+      animation: 150,
+      handle: '.cursor-grab', // Only drag using the grab icon
+      onEnd: async function () {
+        // When drag finishes, gather the new order
+        const items = linksList.querySelectorAll('.link-item');
+        const updates = Array.from(items).map((item, index) => ({
+          id: (item as HTMLElement).dataset.id,
+          position: index
+        }));
+
+        try {
+          // Send new order to the backend secretly in the background
+          await fetch('/api/links', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+          });
+        } catch {
+          alert('Failed to save new order.');
+        }
+      }
+    });
+  }
 
   // --- ADD / UPDATE LINK ---
   addLinkForm?.addEventListener('submit', async (e) => {
@@ -241,6 +289,7 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
       editIdInput.value = target.dataset.id || '';
       titleInput.value = target.dataset.title || '';
       urlInput.value = target.dataset.url || '';
+      iconInput.value = target.dataset.icon || 'language';
       
       // Change the button text
       if (submitText) submitText.textContent = 'Save';
