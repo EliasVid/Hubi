@@ -43,3 +43,12 @@ export const links = sqliteTable('links', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
 });
 
+// Add this to the bottom of src/db/schema.ts
+export const devices = sqliteTable('devices', {
+  id: text('id').primaryKey(), // The unique hardware ID (e.g., 'xyz-789')
+  userId: text('user_id').references(() => users.id), // Who owns it? (Null if unboxed)
+  profileId: text('profile_id').references(() => profiles.id), // Where does it route to?
+  name: text('name').notNull().default('My NFC Card'),
+  isClaimed: integer('is_claimed', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});

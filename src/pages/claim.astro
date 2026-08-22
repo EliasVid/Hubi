@@ -1,0 +1,108 @@
+---
+// src/pages/claim.astro
+import Layout from '../layouts/Layout.astro';
+import { drizzle } from 'drizzle-orm/d1';
+import { eq, and } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+import { devices, sessions, profiles } from '../db/schema';
+
+const deviceId = Astro.url.searchParams.get('id');
+
+if (!deviceId) {
+  return Astro.redirect('/');
+}
+
+const db = drizzle(env.DB);
+
+// 1. Verify the device exists and is actually unclaimed
+const deviceResult = await db.select().from(devices).where(eq(devices.id, deviceId)).limit(1);
+const device = deviceResult[0];
+
+if (!device) {
+  return new Response("Invalid Card", { status: 404 });
+}
+if (device.isClaimed) {
+  return new Response("This card has already been claimed.", { status: 400 });
+}
+
+// 2. Check if the user is currently logged in
+const sessionToken = Astro.cookies.get('nfc_hub_session')?.value;
+let isLoggedIn = false;
+let userProfile = null;
+
+if (sessionToken) {
+  const sessionResult = await db.select().from(sessions).where(eq(sessions.tokenHash, sessionToken)).limit(1);
+  if (sessionResult[0]) {
+    isLoggedIn = true;
+    const profileResult = await db.select().from(profiles).where(eq(profiles.userId, sessionResult[0].userId)).limit(1);
+    userProfile = profileResult[0];
+  }
+}
+---
+
+<Layout title="Claim Your NFC Card | Hubi">
+  <div class="min-h-screen bg-[#f7f9fe] text-slate-900 flex flex-col items-center justify-center p-4">
+    <main class="w-full max-w-md bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center">
+      
+      <div class="w-16 h-16 bg-red-50 text-[#b81120] rounded-2xl flex items-center justify-center mx-auto mb-6">
+        <span class="material-symbols-outlined text-3xl">contactless</span>
+      </div>
+
+      <h1 class="text-2xl font-bold text-slate-900 mb-2">New Card Detected!</h1>
+      <p class="text-slate-600 mb-8 text-sm">You just tapped an unregistered Hubi NFC card. Claim it to link it to your profile.</p>
+
+      {isLoggedIn && userProfile ? (
+        <div class="space-y-4">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+            <p class="text-sm font-semibold text-slate-700">Link this card to:</p>
+            <p class="text-[#b81120] font-bold text-lg mt-1">@{userProfile.username}</p>
+          </div>
+          <button id="claim-btn" data-device={deviceId} class="w-full bg-[#b81120] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-opacity flex justify-center items-center gap-2">
+            Claim Card Now
+          </button>
+        </div>
+      ) : (
+        <div class="space-y-3">
+          <p class="text-sm font-semibold text-amber-600 bg-amber-50 py-2 px-4 rounded-lg mb-4">Please log in to claim this card.</p>
+          <a href="/login" class="block w-full bg-[#b81120] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-opacity">Log In</a>
+          <a href="/register" class="block w-full bg-white border border-slate-200 text-slate-700 py-3.5 rounded-xl font-bold hover:bg-slate-50 transition-colors">Create an Account</a>
+        </div>
+      )}
+
+    </main>
+  </div>
+</Layout>
+
+<script>
+  const claimBtn = document.getElementById('claim-btn');
+  
+  claimBtn?.addEventListener('click', async (e) => {
+    const target = e.currentTarget as HTMLButtonElement;
+    const deviceId = target.dataset.device;
+    
+    // Disable button to prevent double-clicks
+    target.disabled = true;
+    target.innerHTML = 'Claiming...';
+
+    try {
+      const res = await fetch('/api/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId })
+      });
+      
+      if (res.ok) {
+        // Redirect them straight to their admin dashboard once claimed
+        window.location.href = '/admin';
+      } else {
+        alert('Failed to claim card.');
+        target.disabled = false;
+        target.innerHTML = 'Claim Card Now';
+      }
+    } catch {
+      alert('Network error.');
+      target.disabled = false;
+      target.innerHTML = 'Claim Card Now';
+    }
+  });
+</script>

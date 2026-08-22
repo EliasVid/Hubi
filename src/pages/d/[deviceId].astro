@@ -1,0 +1,44 @@
+---
+// src/pages/d/[deviceId].astro
+import { drizzle } from 'drizzle-orm/d1';
+import { eq } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+import { devices, profiles } from '../../db/schema';
+
+const { deviceId } = Astro.params;
+
+if (!deviceId) {
+  return Astro.redirect('/404');
+}
+
+const db = drizzle(env.DB);
+
+// 1. Look up the physical card by its ID
+const deviceResult = await db.select().from(devices).where(eq(devices.id, deviceId)).limit(1);
+const device = deviceResult[0];
+
+// 2. If the card doesn't exist in our database at all, it's a fake/invalid card
+if (!device) {
+  return new Response("Invalid NFC Card", { status: 404 });
+}
+
+// 3. If the card is real but UNCLAIMED (fresh out of the box)
+if (!device.isClaimed) {
+  // We send them to a claim page so they can log in and attach this card to their account
+  return Astro.redirect(`/claim?id=${deviceId}`);
+}
+
+// 4. If the card IS claimed, find out which profile it's currently assigned to
+if (device.profileId) {
+  const profileResult = await db.select().from(profiles).where(eq(profiles.id, device.profileId)).limit(1);
+  const targetProfile = profileResult[0];
+
+  if (targetProfile) {
+    // INVISIBLE REDIRECT: Send them instantly to the correct profile!
+    return Astro.redirect(`/p/${targetProfile.username}`);
+  }
+}
+
+// 5. Fallback: Claimed but no profile assigned yet
+return new Response("This card is active but hasn't been assigned to a profile yet.", { status: 200 });
+---
