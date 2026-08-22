@@ -1,5 +1,6 @@
 ---
-// src/pages/d/[deviceId].astro
+// src/pages/c/[deviceId].astro
+import Layout from '../../layouts/Layout.astro';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
@@ -8,7 +9,7 @@ import { devices, profiles } from '../../db/schema';
 const { deviceId } = Astro.params;
 
 if (!deviceId) {
-  return Astro.redirect('/404');
+  return Astro.redirect('/');
 }
 
 const db = drizzle(env.DB);
@@ -24,7 +25,6 @@ if (!device) {
 
 // 3. If the card is real but UNCLAIMED (fresh out of the box)
 if (!device.isClaimed) {
-  // We send them to a claim page so they can log in and attach this card to their account
   return Astro.redirect(`/claim?id=${deviceId}`);
 }
 
@@ -40,5 +40,28 @@ if (device.profileId) {
 }
 
 // 5. Fallback: Claimed but no profile assigned yet
-return new Response("This card is active but hasn't been assigned to a profile yet.", { status: 200 });
 ---
+
+<Layout title="Card Unassigned | Hubi">
+  <div class="min-h-screen bg-[#f7f9fe] text-slate-900 flex flex-col items-center justify-center p-4">
+    <main class="w-full max-w-md bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center">
+      
+      <!-- Sleeping Icon -->
+      <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
+        <span class="material-symbols-outlined text-3xl">nfc</span>
+      </div>
+
+      <h1 class="text-2xl font-bold text-slate-900 mb-2">Card is Sleeping</h1>
+      <p class="text-slate-600 mb-8 text-sm leading-relaxed">
+        This Hubi NFC card has been claimed securely, but the owner hasn't assigned it to a profile yet.
+      </p>
+
+      <div class="space-y-3">
+        <a href="/login" class="block w-full bg-white border border-slate-200 text-slate-700 py-3.5 rounded-xl font-bold hover:bg-slate-50 transition-colors">
+          Owner? Log in to assign it
+        </a>
+      </div>
+
+    </main>
+  </div>
+</Layout>
