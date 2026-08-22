@@ -129,17 +129,32 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
               <!-- HIDDEN ID FIELD FOR EDITING -->
               <input type="hidden" name="id" id="edit-link-id" value="" />
               
-              <!-- NEW ICON SELECTOR -->
-              <div class="w-full sm:w-28 shrink-0">
+              <!-- HIDDEN ICON FIELD -->
+              <input type="hidden" name="icon" id="link-icon-input" value="language" />
+              
+              <!-- VISUAL ICON SELECTOR -->
+              <div class="w-full sm:w-auto shrink-0">
                 <label class="block text-sm font-semibold text-slate-600 mb-1">Icon</label>
-                <select id="link-icon-input" name="icon" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/10" style="font-family: 'Material Symbols Outlined', sans-serif;">
-                  <option value="language">Website</option>
-                  <option value="work">Portfolio</option>
-                  <option value="photo_camera">Instagram</option>
-                  <option value="chat">WhatsApp</option>
-                  <option value="mail">Email</option>
-                  <option value="play_arrow">YouTube</option>
-                </select>
+                <div class="flex items-center justify-between sm:justify-start gap-1 bg-white border border-slate-200 rounded-lg px-2 h-[42px] overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  <button type="button" class="icon-option w-8 h-8 rounded-md flex items-center justify-center bg-red-50 text-[#b81120] hover:bg-slate-100 transition-colors" data-value="language">
+                    <span class="material-symbols-outlined text-[20px]">language</span>
+                  </button>
+                  <button type="button" class="icon-option w-8 h-8 rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" data-value="work">
+                    <span class="material-symbols-outlined text-[20px]">work</span>
+                  </button>
+                  <button type="button" class="icon-option w-8 h-8 rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" data-value="photo_camera">
+                    <span class="material-symbols-outlined text-[20px]">photo_camera</span>
+                  </button>
+                  <button type="button" class="icon-option w-8 h-8 rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" data-value="chat">
+                    <span class="material-symbols-outlined text-[20px]">chat</span>
+                  </button>
+                  <button type="button" class="icon-option w-8 h-8 rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" data-value="mail">
+                    <span class="material-symbols-outlined text-[20px]">mail</span>
+                  </button>
+                  <button type="button" class="icon-option w-8 h-8 rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" data-value="play_arrow">
+                    <span class="material-symbols-outlined text-[20px]">play_arrow</span>
+                  </button>
+                </div>
               </div>
 
               <div class="flex-1 w-full">
@@ -159,7 +174,6 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
 
           <section>
             <h3 class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Active Links</h3>
-            <!-- ADDED id="links-list" FOR DRAG & DROP -->
             <div id="links-list" class="space-y-3">
               
               {userLinks.length === 0 ? (
@@ -171,7 +185,6 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
                       <span class="material-symbols-outlined">drag_indicator</span>
                     </div>
                     <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                      <!-- DYNAMIC ICON -->
                       <span class="material-symbols-outlined text-slate-600">{link.icon || 'language'}</span>
                     </div>
                     <div class="flex-1 min-w-0">
@@ -179,7 +192,6 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
                       <p class="text-xs text-slate-500 truncate">{link.url}</p>
                     </div>
                     <div class="flex items-center gap-2">
-                      <!-- ADDED data-icon -->
                       <button class="edit-link-btn text-slate-400 hover:text-[#b81120] cursor-pointer" data-id={link.id} data-title={link.title} data-url={link.url} data-icon={link.icon || 'language'}>
                         <span class="material-symbols-outlined">edit</span>
                       </button>
@@ -224,9 +236,34 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
   const editIdInput = document.getElementById('edit-link-id') as HTMLInputElement;
   const titleInput = document.getElementById('link-title-input') as HTMLInputElement;
   const urlInput = document.getElementById('link-url-input') as HTMLInputElement;
-  const iconInput = document.getElementById('link-icon-input') as HTMLSelectElement;
+  const iconInput = document.getElementById('link-icon-input') as HTMLInputElement;
   const submitText = document.getElementById('submit-link-text');
   const submitIcon = document.getElementById('submit-link-icon');
+  
+  // --- VISUAL ICON PICKER LOGIC ---
+  const iconOptions = document.querySelectorAll('.icon-option');
+  
+  function selectIcon(iconValue) {
+    if (iconInput) iconInput.value = iconValue;
+    
+    iconOptions.forEach(btn => {
+      const btnElement = btn as HTMLButtonElement;
+      if (btnElement.dataset.value === iconValue) {
+        btnElement.classList.add('bg-red-50', 'text-[#b81120]');
+        btnElement.classList.remove('text-slate-500');
+      } else {
+        btnElement.classList.remove('bg-red-50', 'text-[#b81120]');
+        btnElement.classList.add('text-slate-500');
+      }
+    });
+  }
+
+  iconOptions.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLButtonElement;
+      selectIcon(target.dataset.value);
+    });
+  });
 
   // --- DRAG AND DROP REORDERING ---
   const linksList = document.getElementById('links-list');
@@ -234,9 +271,8 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
     // @ts-ignore
     new Sortable(linksList, {
       animation: 150,
-      handle: '.cursor-grab', // Only drag using the grab icon
+      handle: '.cursor-grab', 
       onEnd: async function () {
-        // When drag finishes, gather the new order
         const items = linksList.querySelectorAll('.link-item');
         const updates = Array.from(items).map((item, index) => ({
           id: (item as HTMLElement).dataset.id,
@@ -244,7 +280,6 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
         }));
 
         try {
-          // Send new order to the backend secretly in the background
           await fetch('/api/links', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -263,7 +298,6 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
     const formData = new FormData(addLinkForm);
     const payload = Object.fromEntries(formData);
     
-    // If we have a hidden ID, it's an Update. Otherwise, it's a Create.
     const isEdit = !!payload.id;
     const method = isEdit ? 'PUT' : 'POST';
 
@@ -289,14 +323,16 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
       editIdInput.value = target.dataset.id || '';
       titleInput.value = target.dataset.title || '';
       urlInput.value = target.dataset.url || '';
-      iconInput.value = target.dataset.icon || 'language';
+      
+      // Update the visual icon picker
+      selectIcon(target.dataset.icon || 'language');
       
       // Change the button text
       if (submitText) submitText.textContent = 'Save';
       if (submitIcon) submitIcon.textContent = 'save';
       
-      // Scroll up to the form smoothly
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Scroll to the middle (where the form is) instead of the absolute top
+      addLinkForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   });
 
@@ -358,22 +394,16 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, userPr
     reader.onload = (event) => {
       const img = new Image();
       img.onload = async () => {
-        // Compress image using Canvas
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = 256;
         canvas.height = 256;
         
-        // Draw the image scaled to fit 256x256
         ctx?.drawImage(img, 0, 0, 256, 256);
         
-        // Convert to a compressed WebP string (Quality 0.8)
         const base64Avatar = canvas.toDataURL('image/webp', 0.8);
-        
-        // Optimistically update the UI instantly
         if (avatarImg) avatarImg.src = base64Avatar;
 
-        // Send to Database
         try {
           const res = await fetch('/api/profile', {
             method: 'PUT',
