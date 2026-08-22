@@ -25,7 +25,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const profile = profileResult[0];
 
     if (!profile) {
-      return new Response(JSON.stringify({ error: `DEBUG: Profile '${username}' not found in database.` }), { status: 401 });
+      return new Response(JSON.stringify({ error: `Invalid username or password.` }), { status: 401 });
     }
 
     // 2. Find the user
@@ -33,21 +33,38 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const user = userResult[0];
 
     if (!user) {
-      return new Response(JSON.stringify({ error: `DEBUG: Master user ID ${profile.userId} not found.` }), { status: 401 });
+      return new Response(JSON.stringify({ error: `Invalid username or password.` }), { status: 401 });
     }
 
     // 3. Verify password
     const { hash } = await hashPassword(password, user.salt);
     if (hash !== user.passwordHash) {
-      return new Response(JSON.stringify({ error: "DEBUG: Password hash mismatch." }), { status: 401 });
+      return new Response(JSON.stringify({ error: "Invalid username or password." }), { status: 401 });
     }
 
-    // 4. Create Session & Cookie... (keep your existing session creation code here)
+    // 4. Create Session
+    const sessionToken = generateId();
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30); // 30 days
+
+    await db.insert(sessions).values({
+      id: generateId(),
+      userId: user.id,
+      tokenHash: sessionToken,
+      expiresAt,
+    });
+
+    // 5. Set Cookie
+    cookies.set('nfc_hub_session', sessionToken, {
+      path: '/',
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: 'lax',
+      expires: expiresAt
+    });
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
 
   } catch (e: any) {
-    // This will catch unhandled database crashes or syntax issues and show them on the screen!
     return new Response(JSON.stringify({ error: `CRASH: ${e.message || e}` }), { status: 400 });
   }
 };
