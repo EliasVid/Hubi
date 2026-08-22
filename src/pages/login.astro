@@ -1,6 +1,11 @@
 ---
 // src/pages/login.astro
 import Layout from '../layouts/Layout.astro';
+
+// If they are already logged in, send them straight to admin
+if (Astro.cookies.has('nfc_hub_session')) {
+  return Astro.redirect('/admin');
+}
 ---
 
 <Layout title="Login | Hubi">
@@ -18,17 +23,19 @@ import Layout from '../layouts/Layout.astro';
 
       <!-- Login Form -->
       <form id="login-form" class="flex flex-col gap-4">
+        
+        <!-- CHANGED TO USERNAME -->
         <div class="flex flex-col gap-1.5 text-left">
-          <label class="text-xs font-semibold uppercase tracking-wider text-[#5b403e]" for="email">Email Address</label>
+          <label class="text-xs font-semibold uppercase tracking-wider text-[#5b403e]" for="username">Username</label>
           <div class="relative flex items-center">
-            <span class="material-symbols-outlined absolute left-3 text-[#906f6d] text-xl pointer-events-none">mail</span>
+            <span class="material-symbols-outlined absolute left-3 text-[#906f6d] text-xl pointer-events-none">person</span>
             <input 
               class="w-full bg-white border border-[#e4bdba] rounded-xl py-2.5 pl-10 pr-3 text-sm text-[#181c1f] placeholder:text-[#906f6d] focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/15 outline-none transition-all" 
-              id="email" 
-              name="email" 
-              placeholder="you@example.com" 
+              id="username" 
+              name="username" 
+              placeholder="e.g. eliasvidal" 
               required 
-              type="email"
+              type="text"
             />
           </div>
         </div>
@@ -86,7 +93,7 @@ import Layout from '../layouts/Layout.astro';
       } else {
         const result = await res.json() as { error?: string };
         if (errorText) {
-          errorText.textContent = result.error || 'Invalid email or password.';
+          errorText.textContent = result.error || 'Invalid username or password.';
           errorText.classList.remove('hidden');
         }
       }
