@@ -1,0 +1,101 @@
+---
+// src/pages/p/[username].astro
+import Layout from '../../layouts/Layout.astro';
+import { drizzle } from 'drizzle-orm/d1';
+import { eq, asc } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+import { profiles, links } from '../../db/schema';
+
+// 1. Grab the username from the dynamic URL route
+const { username } = Astro.params;
+
+if (!username) {
+  return Astro.redirect('/404');
+}
+
+const db = drizzle(env.DB);
+
+// 2. Fetch the profile matching this username (NO SESSION REQUIRED)
+const profileResult = await db.select().from(profiles).where(eq(profiles.username, username)).limit(1);
+const profile = profileResult[0];
+
+// If no profile exists for this username, throw a 404
+if (!profile) {
+  return Astro.redirect('/404');
+}
+
+// 3. Set up the Avatar: Use DB avatar if it exists, otherwise fall back to UI-Avatars
+const avatarSource = profile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.displayName || profile.username)}&background=b81120&color=fff&size=128`;
+
+// 4. Fetch all links associated with this profile
+const userLinks = await db.select().from(links).where(eq(links.profileId, profile.id)).orderBy(asc(links.position));
+---
+
+<Layout title={`${profile.displayName} (@${profile.username}) | Link Hub`}>
+  <div class="min-h-screen bg-[#f7f9fe] text-slate-900 flex flex-col items-center py-12 px-4 selection:bg-[#b81120] selection:text-white">
+    
+    <!-- Main Profile Card Container (Optimized for Mobile) -->
+    <main class="w-full max-w-[480px] flex flex-col items-center gap-6">
+      
+      <!-- Avatar -->
+      <div class="relative">
+        <img 
+          class="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md" 
+          src={avatarSource} 
+          alt={profile.displayName || profile.username}
+        />
+        <!-- Verified NFC Badge -->
+        <div class="absolute bottom-0 right-0 w-8 h-8 bg-[#b81120] text-white rounded-full flex items-center justify-center shadow-md border-2 border-white" title="Verified NFC Profile">
+          <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">contactless</span>
+        </div>
+      </div>
+
+      <!-- Names & Bio -->
+      <div class="text-center space-y-2 px-4">
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">{profile.displayName}</h1>
+        <p class="text-sm font-semibold text-[#b81120]">@{profile.username}</p>
+        {profile.bio && (
+          <p class="text-sm text-slate-600 leading-relaxed max-w-sm mx-auto">{profile.bio}</p>
+        )}
+      </div>
+
+      <!-- Links Stack -->
+      <div class="w-full flex flex-col gap-3.5 mt-2">
+        {userLinks.length === 0 ? (
+          <div class="bg-white border border-slate-200 rounded-2xl p-6 text-center shadow-sm">
+            <p class="text-sm text-slate-500 italic">No links available yet.</p>
+          </div>
+        ) : (
+          userLinks.map((link) => (
+            <a 
+              href={link.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="w-full bg-white border border-slate-200 hover:border-[#b81120] hover:shadow-md transition-all duration-200 rounded-2xl p-4 flex items-center justify-between group cursor-pointer"
+            >
+              <div class="w-10 h-10 rounded-xl bg-red-50 text-[#b81120] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined text-xl">link</span>
+              </div>
+              <div class="flex-1 min-w-0 px-4 text-left">
+                <h2 class="text-sm font-bold text-slate-900 group-hover:text-[#b81120] transition-colors truncate">{link.title}</h2>
+                <p class="text-xs text-slate-400 truncate">{link.url}</p>
+              </div>
+              <div class="text-slate-300 group-hover:text-[#b81120] transition-colors pr-1">
+                <span class="material-symbols-outlined text-sm">open_in_new</span>
+              </div>
+            </a>
+          ))
+        )}
+      </div>
+
+      <!-- Footer Branding -->
+      <footer class="mt-8 text-center">
+        <a href="/login" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors">
+          <span class="material-symbols-outlined text-base">contactless</span>
+          <span>Powered by Link Hub</span>
+        </a>
+      </footer>
+
+    </main>
+  </div>
+</Layout>

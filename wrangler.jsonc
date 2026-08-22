@@ -1,0 +1,35 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"compatibility_date": "2026-08-21",
+	"compatibility_flags": [
+		"global_fetch_strictly_public"
+	],
+	"name": "hubi",
+	"main": "@astrojs/cloudflare/entrypoints/server",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "nfc_hub_db",
+			"database_id": "local-dev-id"
+		},
+		{
+			"binding": "hubi_nfc",
+			"database_name": "hubi-nfc",
+			"database_id": "eab28b86-7948-4730-a43b-77949bcb81cd",
+			"remote": true
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "AVATARS_BUCKET",
+			"bucket_name": "nfc-profile-avatars"
+		}
+	]
+}

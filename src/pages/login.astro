@@ -1,0 +1,100 @@
+---
+// src/pages/login.astro
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Login | NFC Link Hub">
+  <div class="min-h-screen w-full flex items-center justify-center p-4">
+    <main class="w-full max-w-[420px] bg-white rounded-2xl shadow-sm border border-[#e4bdba] p-6 sm:p-8 flex flex-col gap-6">
+      
+      <!-- Header -->
+      <div class="flex flex-col items-center text-center gap-2">
+        <div class="w-14 h-14 rounded-full bg-[#dc3135]/10 flex items-center justify-center mb-1">
+          <span class="material-symbols-outlined text-[#b81120] text-3xl" style="font-variation-settings: 'FILL' 1;">contactless</span>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight text-[#181c1f]">Link Hub</h1>
+        <p class="text-sm text-[#5b403e]">Manage your NFC card links in seconds</p>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5 text-left">
+          <label class="text-xs font-semibold uppercase tracking-wider text-[#5b403e]" for="email">Email Address</label>
+          <div class="relative flex items-center">
+            <span class="material-symbols-outlined absolute left-3 text-[#906f6d] text-xl pointer-events-none">mail</span>
+            <input 
+              class="w-full bg-white border border-[#e4bdba] rounded-xl py-2.5 pl-10 pr-3 text-sm text-[#181c1f] placeholder:text-[#906f6d] focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/15 outline-none transition-all" 
+              id="email" 
+              name="email" 
+              placeholder="you@example.com" 
+              required 
+              type="email"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1.5 text-left">
+          <label class="text-xs font-semibold uppercase tracking-wider text-[#5b403e]" for="password">Password</label>
+          <div class="relative flex items-center">
+            <span class="material-symbols-outlined absolute left-3 text-[#906f6d] text-xl pointer-events-none">lock</span>
+            <input 
+              class="w-full bg-white border border-[#e4bdba] rounded-xl py-2.5 pl-10 pr-3 text-sm text-[#181c1f] placeholder:text-[#906f6d] focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/15 outline-none transition-all" 
+              id="password" 
+              name="password" 
+              placeholder="••••••••" 
+              required 
+              type="password"
+            />
+          </div>
+        </div>
+
+        <p id="error-message" class="text-xs font-semibold text-[#b81120] text-center hidden"></p>
+
+        <button 
+          class="w-full bg-[#b81120] text-white rounded-xl py-3 px-4 text-sm font-semibold hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-sm mt-2 cursor-pointer" 
+          type="submit"
+        >
+          <span>Sign In</span>
+          <span class="material-symbols-outlined text-lg">login</span>
+        </button>
+      </form>
+
+    </main>
+  </div>
+</Layout>
+
+<script>
+  const form = document.getElementById('login-form') as HTMLFormElement | null;
+  const errorText = document.getElementById('error-message') as HTMLParagraphElement | null;
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (errorText) errorText.classList.add('hidden');
+
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        window.location.href = '/admin';
+      } else {
+        const result = await res.json() as { error?: string };
+        if (errorText) {
+          errorText.textContent = result.error || 'Invalid email or password.';
+          errorText.classList.remove('hidden');
+        }
+      }
+    } catch {
+      if (errorText) {
+        errorText.textContent = 'Connection error. Please try again.';
+        errorText.classList.remove('hidden');
+      }
+    }
+  });
+</script>

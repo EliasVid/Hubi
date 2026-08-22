@@ -1,0 +1,343 @@
+---
+// src/pages/admin/index.astro
+import Layout from '../../layouts/Layout.astro';
+import { drizzle } from 'drizzle-orm/d1';
+import { eq } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
+import { sessions, profiles, links } from '../../db/schema';
+
+// 1. Get the session cookie
+const sessionToken = Astro.cookies.get('nfc_hub_session')?.value;
+
+// If no cookie exists, kick them back to login
+if (!sessionToken) {
+  return Astro.redirect('/login');
+}
+
+const db = drizzle(env.DB);
+
+// 2. Validate the session in the database
+const sessionResult = await db.select().from(sessions).where(eq(sessions.tokenHash, sessionToken)).limit(1);
+const session = sessionResult[0];
+
+// If cookie is invalid or expired, kick to login
+if (!session) {
+  return Astro.redirect('/login');
+}
+
+// 3. Fetch the User's Profile
+const profileResult = await db.select().from(profiles).where(eq(profiles.userId, session.userId)).limit(1);
+const userProfile = profileResult[0];
+// Use DB avatar if it exists, otherwise fall back to UI-Avatars
+const avatarSource = userProfile.avatarUrl || `https://ui-avatars.com/api/?name=${userProfile.displayName}&background=b81120&color=fff&size=128`;
+
+// 4. Fetch the User's Links
+const userLinks = await db.select().from(links).where(eq(links.profileId, userProfile.id));
+---
+
+<Layout title="Admin Dashboard | NFC Link Hub">
+  <style>
+    .nfc-pulse {
+      animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 0.5; }
+      80% { transform: scale(1.5); opacity: 0; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+  </style>
+
+  <div class="text-slate-900 antialiased min-h-screen pt-16 pb-24 md:pb-0 bg-[#f7f9fe]">
+    
+    <header class="fixed top-0 w-full z-50 flex justify-between items-center px-5 md:px-10 max-w-[1200px] h-16 shadow-sm bg-white mx-auto left-0 right-0 border-b border-slate-200">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-[#b81120] font-bold">contactless</span>
+        <span class="text-xl font-bold text-[#b81120]">Link Hub</span>
+      </div>
+      
+      <nav class="hidden md:flex items-center gap-6">
+        <a class="text-[#b81120] font-semibold hover:scale-[1.02] transition-transform" href="#">Profile</a>
+        <a class="text-slate-500 font-semibold hover:scale-[1.02] transition-transform" href="#">Links</a>
+      </nav>
+      
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2">
+          <span class="font-semibold text-sm">@{userProfile.username}</span>
+        </div>
+        <button class="border border-[#b81120] text-[#b81120] px-4 py-1 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors">Logout</button>
+      </div>
+    </header>
+
+    <main class="max-w-[1200px] mx-auto px-5 md:px-10 mt-8">
+      
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+        <div>
+          <h1 class="text-3xl font-bold text-slate-900 mb-2">Welcome back, {userProfile.displayName}!</h1>
+          <div class="inline-flex items-center gap-2 bg-amber-100 text-amber-900 px-3 py-1 rounded-full text-xs font-bold">
+            <div class="relative w-2 h-2 rounded-full bg-amber-600">
+              <div class="absolute inset-0 rounded-full bg-amber-600 nfc-pulse"></div>
+            </div>
+            Active NFC Card Connected
+          </div>
+        </div>
+        
+        <div class="flex gap-3 w-full md:w-auto">
+          <a href={`/p/${userProfile.username}`} target="_blank" class="flex-1 md:flex-none bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl text-sm font-semibold hover:bg-slate-50 shadow-sm text-center">Preview</a>
+          <button id="save-profile-btn" class="flex-1 md:flex-none bg-[#b81120] text-white px-6 py-3 rounded-xl text-sm font-semibold hover:opacity-90 shadow-sm cursor-pointer" type="button">Save Profile</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        <div class="md:col-span-5 space-y-6">
+          <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-xl font-bold mb-6">Profile Information</h2>
+            
+            <div class="flex flex-col items-center mb-6">
+              <div class="relative mb-4 group cursor-pointer" onclick="document.getElementById('avatar-upload').click()">
+                <img id="profile-avatar-img" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-sm" src={avatarSource} alt="Profile"/>
+                <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span class="material-symbols-outlined text-white">photo_camera</span>
+                </div>
+              </div>
+              
+              <!-- Hidden File Input -->
+              <input type="file" id="avatar-upload" accept="image/png, image/jpeg, image/webp" class="hidden" />
+              
+              <button type="button" class="text-[#b81120] text-sm font-semibold hover:underline" onclick="document.getElementById('avatar-upload').click()">Change Avatar</button>
+            </div>
+            
+            <form id="profile-form" class="space-y-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-600 mb-1">Display Name</label>
+                <input name="displayName" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/10 outline-none" type="text" value={userProfile.displayName}/>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-600 mb-1">Bio</label>
+                <textarea name="bio" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/10 outline-none resize-none" rows="3">{userProfile.bio || ''}</textarea>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <div class="md:col-span-7 space-y-6">
+          
+          <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-xl font-bold mb-4">Add New Link</h2>
+            <form id="add-link-form" class="flex flex-col sm:flex-row gap-4 items-end">
+              
+              <!-- HIDDEN ID FIELD FOR EDITING -->
+              <input type="hidden" name="id" id="edit-link-id" value="" />
+              
+              <div class="flex-1 w-full">
+                <label class="block text-sm font-semibold text-slate-600 mb-1">Title</label>
+                <input id="link-title-input" name="title" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/10" placeholder="My Portfolio" type="text" required/>
+              </div>
+              <div class="flex-1 w-full">
+                <label class="block text-sm font-semibold text-slate-600 mb-1">URL</label>
+                <input id="link-url-input" name="url" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/10" placeholder="https://" type="url" required/>
+              </div>
+              <button class="bg-[#b81120] text-white px-6 h-[42px] rounded-xl text-sm font-semibold hover:opacity-90 w-full sm:w-auto flex items-center justify-center gap-2 cursor-pointer" type="submit">
+                <span id="submit-link-icon" class="material-symbols-outlined text-[20px]">add</span> 
+                <span id="submit-link-text">Add</span>
+              </button>
+            </form>
+          </section>
+
+          <section>
+            <h3 class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Active Links</h3>
+            <div class="space-y-3">
+              
+              {userLinks.length === 0 ? (
+                <p class="text-sm text-slate-500 italic">No links added yet. Add your first link above!</p>
+              ) : (
+                userLinks.map((link) => (
+                  <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex items-center gap-3 hover:border-b-2 hover:border-b-[#b81120] transition-all">
+                    <div class="cursor-grab text-slate-400">
+                      <span class="material-symbols-outlined">drag_indicator</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                      <span class="material-symbols-outlined text-slate-600">language</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <h4 class="text-sm font-bold text-slate-900 truncate">{link.title}</h4>
+                      <p class="text-xs text-slate-500 truncate">{link.url}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <!-- EDIT AND DELETE BUTTONS WITH DATA ATTRIBUTES -->
+                      <button class="edit-link-btn text-slate-400 hover:text-[#b81120] cursor-pointer" data-id={link.id} data-title={link.title} data-url={link.url}>
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                      <button class="delete-link-btn text-slate-400 hover:text-red-600 cursor-pointer" data-id={link.id}>
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center py-2 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] border-t border-slate-200 rounded-t-2xl">
+      <a class="flex flex-col items-center justify-center bg-red-50 text-[#b81120] rounded-xl px-4 py-1" href="#">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+        <span class="text-[10px] font-bold mt-1">Profile</span>
+      </a>
+      <a class="flex flex-col items-center justify-center text-slate-500 px-4 py-1" href="#">
+        <span class="material-symbols-outlined">link</span>
+        <span class="text-[10px] font-bold mt-1">Links</span>
+      </a>
+      <a class="flex flex-col items-center justify-center text-slate-500 px-4 py-1" href="#">
+        <span class="material-symbols-outlined">nfc</span>
+        <span class="text-[10px] font-bold mt-1">Devices</span>
+      </a>
+    </nav>
+    
+  </div>
+</Layout>
+
+<!-- JAVASCRIPT FOR CRUD OPERATIONS -->
+<script>
+  const addLinkForm = document.getElementById('add-link-form') as HTMLFormElement;
+  const editIdInput = document.getElementById('edit-link-id') as HTMLInputElement;
+  const titleInput = document.getElementById('link-title-input') as HTMLInputElement;
+  const urlInput = document.getElementById('link-url-input') as HTMLInputElement;
+  const submitText = document.getElementById('submit-link-text');
+  const submitIcon = document.getElementById('submit-link-icon');
+
+  // --- ADD / UPDATE LINK ---
+  addLinkForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(addLinkForm);
+    const payload = Object.fromEntries(formData);
+    
+    // If we have a hidden ID, it's an Update. Otherwise, it's a Create.
+    const isEdit = !!payload.id;
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+      const res = await fetch('/api/links', {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) window.location.reload();
+      else alert('Failed to save link');
+    } catch {
+      alert('Network error');
+    }
+  });
+
+  // --- PREPARE TO EDIT ---
+  document.querySelectorAll('.edit-link-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLButtonElement;
+      
+      // Populate the form with the existing data
+      editIdInput.value = target.dataset.id || '';
+      titleInput.value = target.dataset.title || '';
+      urlInput.value = target.dataset.url || '';
+      
+      // Change the button text
+      if (submitText) submitText.textContent = 'Save';
+      if (submitIcon) submitIcon.textContent = 'save';
+      
+      // Scroll up to the form smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  // --- DELETE LINK ---
+  document.querySelectorAll('.delete-link-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      if (!confirm('Are you sure you want to delete this link?')) return;
+      
+      const target = e.currentTarget as HTMLButtonElement;
+      const linkId = target.dataset.id;
+
+      try {
+        const res = await fetch(`/api/links?id=${linkId}`, { method: 'DELETE' });
+        if (res.ok) window.location.reload();
+        else alert('Failed to delete link');
+      } catch {
+        alert('Network error');
+      }
+    });
+  });
+
+  // --- SAVE PROFILE INFO ---
+  const saveProfileBtn = document.getElementById('save-profile-btn');
+  const profileForm = document.getElementById('profile-form') as HTMLFormElement;
+
+  saveProfileBtn?.addEventListener('click', async () => {
+    if (!profileForm) return;
+
+    const formData = new FormData(profileForm);
+    const payload = Object.fromEntries(formData);
+
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const result = await res.json();
+        alert(result.error || 'Failed to save profile');
+      }
+    } catch {
+      alert('Network error while saving profile');
+    }
+  });
+
+  // --- UPLOAD AVATAR ---
+  const avatarUpload = document.getElementById('avatar-upload') as HTMLInputElement;
+  const avatarImg = document.getElementById('profile-avatar-img') as HTMLImageElement;
+
+  avatarUpload?.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = async () => {
+        // Compress image using Canvas
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 256;
+        canvas.height = 256;
+        
+        // Draw the image scaled to fit 256x256
+        ctx?.drawImage(img, 0, 0, 256, 256);
+        
+        // Convert to a compressed WebP string (Quality 0.8)
+        const base64Avatar = canvas.toDataURL('image/webp', 0.8);
+        
+        // Optimistically update the UI instantly
+        if (avatarImg) avatarImg.src = base64Avatar;
+
+        // Send to Database
+        try {
+          const res = await fetch('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ avatarUrl: base64Avatar })
+          });
+          if (!res.ok) alert('Failed to save avatar');
+        } catch {
+          alert('Network error while saving avatar');
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+</script>
