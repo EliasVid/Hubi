@@ -6,73 +6,64 @@ import { env } from 'cloudflare:workers';
 import { sessions, profiles, links } from '../../db/schema';
 import { generateId } from '../../lib/crypto';
 
-// Security Helper
-async function getAuthenticatedProfile(cookies: any, db: any) {
+// Updated Security Helper: Ensures the user actually owns the target profile
+async function verifyProfileOwnership(profileId: string, cookies: any, db: any) {
+  if (!profileId) return null;
   const sessionToken = cookies.get('nfc_hub_session')?.value;
   if (!sessionToken) return null;
+  
   const sessionResult = await db.select().from(sessions).where(eq(sessions.tokenHash, sessionToken)).limit(1);
   if (!sessionResult[0]) return null;
-  const profileResult = await db.select().from(profiles).where(eq(profiles.userId, sessionResult[0].userId)).limit(1);
+  
+  const profileResult = await db.select().from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.userId, sessionResult[0].userId))).limit(1);
   return profileResult[0] || null;
 }
 
-// CREATE (Add Link)
 export const POST: APIRoute = async ({ request, cookies }) => {
   const db = drizzle(env.DB);
-  const profile = await getAuthenticatedProfile(cookies, db);
+  const { title, url, icon, profileId } = await request.json();
+  
+  const profile = await verifyProfileOwnership(profileId, cookies, db);
   if (!profile) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-
-  const { title, url, icon } = await request.json();
   if (!title || !url) return new Response(JSON.stringify({ error: "Title and URL required" }), { status: 400 });
 
   try {
-    await db.insert(links).values({
-      id: generateId(),
-      profileId: profile.id,
-      title,
-      url,
-      icon: icon || 'language',
-      position: 99, // New links go to the bottom by default
-    });
+    await db.insert(links).values({ id: generateId(), profileId, title, url, icon: icon || 'language', position: 99 });
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e.message }), { status: 400 });
   }
 };
 
-// UPDATE (Edit Link)
 export const PUT: APIRoute = async ({ request, cookies }) => {
   const db = drizzle(env.DB);
-  const profile = await getAuthenticatedProfile(cookies, db);
-  if (!profile) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  const { id, title, url, icon, profileId } = await request.json();
 
-  const { id, title, url, icon } = await request.json();
+  const profile = await verifyProfileOwnership(profileId, cookies, db);
+  if (!profile) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   if (!id || !title || !url) return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
 
   try {
-    await db.update(links)
-      .set({ title, url, icon })
-      .where(and(eq(links.id, id), eq(links.profileId, profile.id)));
+    await db.update(links).set({ title, url, icon }).where(and(eq(links.id, id), eq(links.profileId, profileId)));
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e.message }), { status: 400 });
   }
 };
 
-// REORDER (Update Positions)
 export const PATCH: APIRoute = async ({ request, cookies }) => {
   const db = drizzle(env.DB);
-  const profile = await getAuthenticatedProfile(cookies, db);
+  const updates = await request.json(); 
+  
+  if (!updates.length) return new Response(JSON.stringify({ success: true }), { status: 200 });
+  
+  const profileId = updates[0].profileId;
+  const profile = await verifyProfileOwnership(profileId, cookies, db);
   if (!profile) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
-  const updates = await request.json(); // Array of { id, position }
-
   try {
-    // Run all updates in parallel
     await Promise.all(updates.map((update: any) => 
-      db.update(links)
-        .set({ position: update.position })
-        .where(and(eq(links.id, update.id), eq(links.profileId, profile.id)))
+      db.update(links).set({ position: update.position }).where(and(eq(links.id, update.id), eq(links.profileId, profileId)))
     ));
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (e: any) {
@@ -80,18 +71,17 @@ export const PATCH: APIRoute = async ({ request, cookies }) => {
   }
 };
 
-// DELETE (Remove Link)
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   const db = drizzle(env.DB);
-  const profile = await getAuthenticatedProfile(cookies, db);
-  if (!profile) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-
   const url = new URL(request.url);
   const id = url.searchParams.get('id');
-  if (!id) return new Response(JSON.stringify({ error: "Link ID required" }), { status: 400 });
+  const profileId = url.searchParams.get('profileId');
+  
+  const profile = await verifyProfileOwnership(profileId || '', cookies, db);
+  if (!profile || !id) return new Response(JSON.stringify({ error: "Unauthorized or missing ID" }), { status: 400 });
 
   try {
-    await db.delete(links).where(and(eq(links.id, id), eq(links.profileId, profile.id)));
+    await db.delete(links).where(and(eq(links.id, id), eq(links.profileId, profileId!)));
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e.message }), { status: 400 });
