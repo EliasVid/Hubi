@@ -29,15 +29,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     await db.insert(profiles).values({
       id: newProfileId,
       userId: sessionUser.userId,
-      username: username, 
-      displayName: username, 
+      username: username,
+      displayName: username,
+      bio: null,
+      avatarUrl: null,
+      whatsappNumber: null,
+      instagramHandle: null,
     });
     
     return new Response(JSON.stringify({ success: true, id: newProfileId }), { status: 200 });
   } catch (e: any) {
-    // 🔥 WE CHANGED THIS: Now it sends the raw database error back to your browser alert!
-    console.error("DB Error:", e);
-    return new Response(JSON.stringify({ error: `DB Error: ${e.message || e}` }), { status: 400 });
+    // FIX: Extract the TRUE SQLite error from Cloudflare's inner 'cause' object
+    const realError = e.cause?.message || e.message;
+    console.error("True DB Error:", realError);
+    return new Response(JSON.stringify({ error: `DB Error: ${realError}` }), { status: 400 });
   }
 };
 
@@ -60,6 +65,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     await db.update(profiles).set(updateData).where(and(eq(profiles.id, profileId), eq(profiles.userId, sessionUser.userId)));
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: `DB Error: ${e.message || e}` }), { status: 400 });
+    const realError = e.cause?.message || e.message;
+    return new Response(JSON.stringify({ error: `DB Error: ${realError}` }), { status: 400 });
   }
 };
