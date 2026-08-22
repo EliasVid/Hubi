@@ -19,8 +19,8 @@ export const sessions = sqliteTable('sessions', {
 
 export const profiles = sqliteTable('profiles', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
-  username: text('username').notNull().unique(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  username: text('username').notNull().unique(), // Unique constraint is important here!
   displayName: text('display_name').notNull(),
   bio: text('bio'),
   avatarUrl: text('avatar_url'),
@@ -28,7 +28,7 @@ export const profiles = sqliteTable('profiles', {
   instagramHandle: text('instagram_handle'),
   themeColor: text('theme_color').default('slate'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
 export const links = sqliteTable('links', {

@@ -29,12 +29,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     await db.insert(profiles).values({
       id: newProfileId,
       userId: sessionUser.userId,
-      username: username, // Assuming this passes unique constraint
-      displayName: username,
+      username: username, 
+      displayName: username, 
     });
+    
     return new Response(JSON.stringify({ success: true, id: newProfileId }), { status: 200 });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: "Username may already be taken." }), { status: 400 });
+    // 🔥 WE CHANGED THIS: Now it sends the raw database error back to your browser alert!
+    console.error("DB Error:", e);
+    return new Response(JSON.stringify({ error: `DB Error: ${e.message || e}` }), { status: 400 });
   }
 };
 
@@ -54,10 +57,9 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
   if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
 
   try {
-    // Only updates the profile if it belongs to the logged-in user!
     await db.update(profiles).set(updateData).where(and(eq(profiles.id, profileId), eq(profiles.userId, sessionUser.userId)));
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 400 });
+    return new Response(JSON.stringify({ error: `DB Error: ${e.message || e}` }), { status: 400 });
   }
 };
