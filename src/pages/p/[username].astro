@@ -31,7 +31,7 @@ const avatarSource = profile.avatarUrl || `https://ui-avatars.com/api/?name=${en
 const userLinks = await db.select().from(links).where(eq(links.profileId, profile.id)).orderBy(asc(links.position));
 ---
 
-<Layout title={`${profile.displayName} (@${profile.username}) | Link Hub`}>
+<Layout title={`${profile.displayName} (@${profile.username}) | Hubi`}>
   <div class="min-h-screen bg-[#f7f9fe] text-slate-900 flex flex-col items-center py-12 px-4 selection:bg-[#b81120] selection:text-white">
     
     <!-- Main Profile Card Container (Optimized for Mobile) -->
@@ -92,7 +92,7 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, profil
       <footer class="mt-8 text-center">
         <a href="/login" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors">
           <span class="material-symbols-outlined text-base">contactless</span>
-          <span>Powered by Link Hub</span>
+          <span>Powered by Hubi</span>
         </a>
       </footer>
 
