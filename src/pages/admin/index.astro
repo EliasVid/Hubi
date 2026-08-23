@@ -53,7 +53,6 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
         <div class="hidden md:flex items-center gap-2">
           <span class="font-semibold text-sm">@{activeProfile.username}</span>
         </div>
-        <!-- ADDED ID TO LOGOUT BUTTON -->
         <button id="logout-btn" class="border border-[#b81120] text-[#b81120] px-4 py-1 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors cursor-pointer">Logout</button>
       </div>
     </header>
@@ -194,12 +193,17 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
             <p class="text-sm text-slate-500 italic">No physical cards claimed yet.</p>
           ) : (
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {userDevices.map(device => (
-                <div class="border border-slate-200 rounded-xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+              {userDevices.map(device => {
+                // Find out which profile this specific card is pointing to right now
+                const assignedProfile = userProfiles.find(p => p.id === device.profileId);
+                
+                return (
+                <div class="border border-slate-200 rounded-xl p-4 flex flex-col gap-4 hover:shadow-md transition-shadow">
                   <div class="flex justify-between items-center">
                     <h3 class="font-bold text-slate-900">{device.name}</h3>
                     <span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-1 rounded-md font-mono uppercase tracking-widest">{device.id}</span>
                   </div>
+                  
                   <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Routes to Profile:</label>
                     <select class="device-profile-select w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-[#b81120] focus:border-[#b81120] block p-2 outline-none cursor-pointer" data-device-id={device.id}>
@@ -209,8 +213,29 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
                       ))}
                     </select>
                   </div>
+
+                  {/* VISUAL INDICATOR OF THE PUBLIC LINK */}
+                  {assignedProfile ? (
+                    <div class="bg-slate-50 border border-slate-100 rounded-lg p-3 flex items-center justify-between group">
+                      <div class="flex flex-col overflow-hidden">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Public Link</span>
+                        <a href={`/p/${assignedProfile.username}`} target="_blank" class="text-xs text-[#b81120] font-semibold truncate hover:underline">
+                          links.smarti.com.co/p/{assignedProfile.username}
+                        </a>
+                      </div>
+                      <a href={`/p/${assignedProfile.username}`} target="_blank" class="text-slate-400 hover:text-[#b81120] transition-colors p-1">
+                        <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+                      </a>
+                    </div>
+                  ) : (
+                    <div class="bg-amber-50 border border-amber-100 rounded-lg p-3 flex items-center gap-2">
+                      <span class="material-symbols-outlined text-amber-500 text-[18px]">warning</span>
+                      <span class="text-xs font-semibold text-amber-700">Card is sleeping</span>
+                    </div>
+                  )}
+
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </section>
@@ -235,10 +260,8 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
   </div>
 </Layout>
 
-<!-- Drag and Drop Library -->
 <script is:inline src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
-<!-- JAVASCRIPT FOR CRUD OPERATIONS -->
 <script define:vars={{ activeProfileId: activeProfile.id }}>
   const ACTIVE_PROFILE_ID = activeProfileId;
 
@@ -257,7 +280,7 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
     select.addEventListener('change', async (e) => {
       const target = e.currentTarget;
       const deviceId = target.dataset.deviceId;
-      const profileId = target.value; // Can be empty if unassigned
+      const profileId = target.value;
 
       try {
         const res = await fetch('/api/devices', {
@@ -266,7 +289,12 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
           body: JSON.stringify({ deviceId, profileId })
         });
         
-        if (!res.ok) alert('Failed to update device routing.');
+        if (res.ok) {
+          // ADDED: Instantly refresh the page to update the public link UI below it!
+          window.location.reload();
+        } else {
+          alert('Failed to update device routing.');
+        }
       } catch {
         alert('Network error while updating device.');
       }
