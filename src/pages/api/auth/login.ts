@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     cookies.set('nfc_hub_session', sessionToken, {
       path: '/',
       httpOnly: true,
-      secure: import.meta.env.PROD,
+      secure: request.url.startsWith('https'), 
       sameSite: 'lax',
       expires: expiresAt
     });
