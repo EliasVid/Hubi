@@ -1,9 +1,11 @@
+---
 // src/pages/claim.astro
 import Layout from '../layouts/Layout.astro';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
-import { devices, sessions, profiles } from '../db/schema';
+import { devices, profiles } from '../db/schema';
+import { getValidSession } from '../lib/auth';
 
 const deviceId = Astro.url.searchParams.get('id');
 if (!deviceId) return Astro.redirect('/');
@@ -15,16 +17,13 @@ const device = deviceResult[0];
 if (!device) return new Response("Tarjeta inválida", { status: 404 });
 if (device.isClaimed) return new Response("Esta tarjeta ya ha sido reclamada.", { status: 400 });
 
-const sessionToken = Astro.cookies.get('nfc_hub_session')?.value;
 let isLoggedIn = false;
 let userProfiles: any[] = [];
 
-if (sessionToken) {
-  const sessionResult = await db.select().from(sessions).where(eq(sessions.tokenHash, sessionToken)).limit(1);
-  if (sessionResult[0]) {
-    isLoggedIn = true;
-    userProfiles = await db.select().from(profiles).where(eq(profiles.userId, sessionResult[0].userId));
-  }
+const session = await getValidSession(Astro.cookies, db);
+if (session) {
+  isLoggedIn = true;
+  userProfiles = await db.select().from(profiles).where(eq(profiles.userId, session.userId));
 }
 ---
 

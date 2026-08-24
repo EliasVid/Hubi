@@ -1,3 +1,4 @@
+---
 // src/pages/p/[username].astro
 import Layout from '../../layouts/Layout.astro';
 import { drizzle } from 'drizzle-orm/d1';
@@ -28,6 +29,18 @@ const avatarSource = profile.avatarUrl || `https://ui-avatars.com/api/?name=${en
 
 // 4. Fetch all links associated with this profile
 const userLinks = await db.select().from(links).where(eq(links.profileId, profile.id)).orderBy(asc(links.position));
+
+// Defense in depth: even though the API validates URL schemes on write, guard
+// at render time so any legacy/unsafe href (e.g. javascript:) is neutralized
+// instead of being clickable.
+function safeHref(rawUrl: string): string {
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? rawUrl : '#';
+  } catch {
+    return '#';
+  }
+}
 ---
 
 <Layout title={`${profile.displayName} (@${profile.username}) | Hubi`}>
@@ -66,9 +79,9 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, profil
           </div>
         ) : (
           userLinks.map((link) => (
-            <a 
-              href={link.url} 
-              target="_blank" 
+            <a
+              href={safeHref(link.url)}
+              target="_blank"
               rel="noopener noreferrer"
               class="w-full bg-white border border-slate-200 hover:border-[#b81120] hover:shadow-md transition-all duration-200 rounded-2xl p-4 flex items-center justify-between group cursor-pointer"
             >
