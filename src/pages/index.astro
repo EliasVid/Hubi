@@ -1,9 +1,8 @@
----
 // src/pages/index.astro
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Hubi | Smart NFC Link Management">
+<Layout title="Hubi | Gestión Inteligente de Enlaces NFC">
   <style>
     .nfc-pulse {
       animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
@@ -29,13 +28,13 @@ import Layout from '../layouts/Layout.astro';
           href="/login" 
           class="text-sm font-semibold text-slate-700 hover:text-slate-900 px-4 py-2 rounded-xl hover:bg-slate-100 transition-colors"
         >
-          Log in
+          Iniciar sesión
         </a>
         <a 
           href="/register" 
           class="bg-[#b81120] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity shadow-sm"
         >
-          Get Started
+          Comenzar
         </a>
       </div>
     </header>
@@ -48,16 +47,16 @@ import Layout from '../layouts/Layout.astro';
         <div class="relative w-2 h-2 rounded-full bg-[#b81120]">
           <div class="absolute inset-0 rounded-full bg-[#b81120] nfc-pulse"></div>
         </div>
-        Next-Gen Contactless Profiles
+        Perfiles sin contacto de última generación
       </div>
 
       <!-- Headline -->
       <h1 class="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight mb-4">
-        Share your world in a single <span class="text-[#b81120]">tap</span>.
+        Comparte tu mundo con un solo <span class="text-[#b81120]">toque</span>.
       </h1>
 
       <p class="text-slate-600 text-base sm:text-lg mb-8 leading-relaxed max-w-lg">
-        Create your personalized micro-page, organize your key links, and program your NFC cards in seconds.
+        Crea tu micropágina personalizada, organiza tus enlaces clave y programa tus tarjetas NFC en segundos.
       </p>
 
       <!-- Action Buttons -->
@@ -67,13 +66,13 @@ import Layout from '../layouts/Layout.astro';
           class="bg-[#b81120] text-white px-8 py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 shadow-md flex items-center justify-center gap-2 cursor-pointer transition-transform hover:scale-[1.02]"
         >
           <span class="material-symbols-outlined text-lg">bolt</span>
-          Claim your handle
+          Reclama tu usuario
         </a>
         <a 
           href="/login" 
           class="bg-white border border-slate-200 text-slate-700 px-8 py-3.5 rounded-xl font-semibold text-sm hover:bg-slate-50 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
         >
-          Access Dashboard
+          Acceder al Panel
         </a>
       </div>
 
@@ -81,7 +80,7 @@ import Layout from '../layouts/Layout.astro';
 
     <!-- Footer -->
     <footer class="w-full max-w-[1200px] mx-auto py-6 px-6 text-center text-xs text-slate-400 border-t border-slate-200/60">
-      <p>© {new Date().getFullYear()} Hubi. All rights reserved.</p>
+      <p>© {new Date().getFullYear()} Hubi. Todos los derechos reservados.</p>
     </footer>
 
   </div>

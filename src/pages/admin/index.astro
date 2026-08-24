@@ -1,4 +1,3 @@
----
 // src/pages/admin/index.astro
 import Layout from '../../layouts/Layout.astro';
 import { drizzle } from 'drizzle-orm/d1';
@@ -26,7 +25,7 @@ const userLinks = await db.select().from(links).where(eq(links.profileId, active
 const userDevices = await db.select().from(devices).where(eq(devices.userId, session.userId));
 ---
 
-<Layout title="Admin Dashboard | Hubi">
+<Layout title="Panel de Administración | Hubi">
   <style>
     .nfc-pulse { animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
     @keyframes pulse-ring {
@@ -45,15 +44,15 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
       </div>
       
       <nav class="hidden md:flex items-center gap-6">
-        <a class="text-[#b81120] font-semibold hover:scale-[1.02] transition-transform" href="#">Profile</a>
-        <a class="text-slate-500 font-semibold hover:scale-[1.02] transition-transform" href="#devices-section">Devices</a>
+        <a class="text-[#b81120] font-semibold hover:scale-[1.02] transition-transform" href="#">Perfil</a>
+        <a class="text-slate-500 font-semibold hover:scale-[1.02] transition-transform" href="#devices-section">Dispositivos</a>
       </nav>
       
       <div class="flex items-center gap-4">
         <div class="hidden md:flex items-center gap-2">
           <span class="font-semibold text-sm">@{activeProfile.username}</span>
         </div>
-        <button id="logout-btn" class="border border-[#b81120] text-[#b81120] px-4 py-1 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors cursor-pointer">Logout</button>
+        <button id="logout-btn" class="border border-[#b81120] text-[#b81120] px-4 py-1 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors cursor-pointer">Cerrar sesión</button>
       </div>
     </header>
 
@@ -62,14 +61,14 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
           <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Active Profile</label>
+            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Perfil Activo</label>
             <div class="flex items-center gap-2">
               <select onchange="window.location.href='?p='+this.value" class="bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-[#b81120] focus:border-[#b81120] block w-full p-2.5 font-semibold outline-none cursor-pointer">
                 {userProfiles.map(p => (
                   <option value={p.id} selected={p.id === activeProfile.id}>@{p.username} {p.displayName ? `(${p.displayName})` : ''}</option>
                 ))}
               </select>
-              <button id="new-profile-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2.5 rounded-lg text-sm font-bold transition-colors whitespace-nowrap flex items-center gap-1" title="Create New Profile">
+              <button id="new-profile-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2.5 rounded-lg text-sm font-bold transition-colors whitespace-nowrap flex items-center gap-1" title="Crear nuevo perfil">
                 <span class="material-symbols-outlined text-[18px]">add</span>
               </button>
             </div>
@@ -77,8 +76,8 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
         </div>
         
         <div class="flex gap-3 w-full md:w-auto">
-          <a href={`/p/${activeProfile.username}`} target="_blank" class="flex-1 md:flex-none bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl text-sm font-semibold hover:bg-slate-50 shadow-sm text-center flex items-center justify-center gap-2"><span class="material-symbols-outlined text-[18px]">visibility</span> Preview</a>
-          <button id="save-profile-btn" class="flex-1 md:flex-none bg-[#b81120] text-white px-6 py-3 rounded-xl text-sm font-semibold hover:opacity-90 shadow-sm cursor-pointer flex items-center justify-center gap-2" type="button"><span class="material-symbols-outlined text-[18px]">save</span> Save</button>
+          <a href={`/p/${activeProfile.username}`} target="_blank" class="flex-1 md:flex-none bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl text-sm font-semibold hover:bg-slate-50 shadow-sm text-center flex items-center justify-center gap-2"><span class="material-symbols-outlined text-[18px]">visibility</span> Vista previa</a>
+          <button id="save-profile-btn" class="flex-1 md:flex-none bg-[#b81120] text-white px-6 py-3 rounded-xl text-sm font-semibold hover:opacity-90 shadow-sm cursor-pointer flex items-center justify-center gap-2" type="button"><span class="material-symbols-outlined text-[18px]">save</span> Guardar</button>
         </div>
       </div>
 
@@ -86,27 +85,27 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
         
         <div class="md:col-span-5 space-y-6">
           <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <h2 class="text-xl font-bold mb-6">Profile Information</h2>
+            <h2 class="text-xl font-bold mb-6">Información del Perfil</h2>
             
             <div class="flex flex-col items-center mb-6">
               <div class="relative mb-4 group cursor-pointer" onclick="document.getElementById('avatar-upload').click()">
-                <img id="profile-avatar-img" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-sm" src={avatarSource} alt="Profile"/>
+                <img id="profile-avatar-img" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-sm" src={avatarSource} alt="Perfil"/>
                 <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <span class="material-symbols-outlined text-white">photo_camera</span>
                 </div>
               </div>
               <input type="file" id="avatar-upload" accept="image/png, image/jpeg, image/webp" class="hidden" />
-              <button type="button" class="text-[#b81120] text-sm font-semibold hover:underline" onclick="document.getElementById('avatar-upload').click()">Change Avatar</button>
+              <button type="button" class="text-[#b81120] text-sm font-semibold hover:underline" onclick="document.getElementById('avatar-upload').click()">Cambiar avatar</button>
             </div>
             
             <form id="profile-form" class="space-y-4">
               <input type="hidden" name="profileId" value={activeProfile.id} />
               <div>
-                <label class="block text-sm font-semibold text-slate-600 mb-1">Display Name</label>
+                <label class="block text-sm font-semibold text-slate-600 mb-1">Nombre para mostrar</label>
                 <input name="displayName" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/10 outline-none" type="text" value={activeProfile.displayName || ''}/>
               </div>
               <div>
-                <label class="block text-sm font-semibold text-slate-600 mb-1">Bio</label>
+                <label class="block text-sm font-semibold text-slate-600 mb-1">Biografía</label>
                 <textarea name="bio" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:border-[#b81120] focus:ring-2 focus:ring-[#b81120]/10 outline-none resize-none" rows="3">{activeProfile.bio || ''}</textarea>
               </div>
             </form>
@@ -115,14 +114,14 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
 
         <div id="links" class="md:col-span-7 space-y-6">
           <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <h2 class="text-xl font-bold mb-4">Add New Link</h2>
+            <h2 class="text-xl font-bold mb-4">Añadir Nuevo Enlace</h2>
             <form id="add-link-form" class="flex flex-col sm:flex-row gap-4 items-end">
               <input type="hidden" name="id" id="edit-link-id" value="" />
               <input type="hidden" name="icon" id="link-icon-input" value="language" />
               <input type="hidden" name="profileId" value={activeProfile.id} />
               
               <div class="w-full sm:w-auto shrink-0">
-                <label class="block text-sm font-semibold text-slate-600 mb-1">Icon</label>
+                <label class="block text-sm font-semibold text-slate-600 mb-1">Icono</label>
                 <div class="flex items-center justify-between sm:justify-start gap-1 bg-white border border-slate-200 rounded-lg px-2 h-[42px] overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <button type="button" class="icon-option w-8 h-8 rounded-md flex items-center justify-center bg-red-50 text-[#b81120] hover:bg-slate-100 transition-colors" data-value="language"><span class="material-symbols-outlined text-[20px]">language</span></button>
                   <button type="button" class="icon-option w-8 h-8 rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" data-value="work"><span class="material-symbols-outlined text-[20px]">work</span></button>
@@ -134,8 +133,8 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
               </div>
 
               <div class="flex-1 w-full">
-                <label class="block text-sm font-semibold text-slate-600 mb-1">Title</label>
-                <input id="link-title-input" name="title" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-[#b81120]" placeholder="My Portfolio" type="text" required/>
+                <label class="block text-sm font-semibold text-slate-600 mb-1">Título</label>
+                <input id="link-title-input" name="title" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-[#b81120]" placeholder="Mi portafolio" type="text" required/>
               </div>
               <div class="flex-1 w-full">
                 <label class="block text-sm font-semibold text-slate-600 mb-1">URL</label>
@@ -143,16 +142,16 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
               </div>
               <button class="bg-[#b81120] text-white px-6 h-[42px] rounded-xl text-sm font-semibold hover:opacity-90 w-full sm:w-auto flex items-center justify-center gap-2 cursor-pointer" type="submit">
                 <span id="submit-link-icon" class="material-symbols-outlined text-[20px]">add</span> 
-                <span id="submit-link-text">Add</span>
+                <span id="submit-link-text">Añadir</span>
               </button>
             </form>
           </section>
 
           <section>
-            <h3 class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Active Links</h3>
+            <h3 class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Enlaces Activos</h3>
             <div id="links-list" class="space-y-3">
               {userLinks.length === 0 ? (
-                <p class="text-sm text-slate-500 italic">No links added yet. Add your first link above!</p>
+                <p class="text-sm text-slate-500 italic">No hay enlaces añadidos todavía. ¡Añade tu primer enlace arriba!</p>
               ) : (
                 userLinks.map((link) => (
                   <div class="link-item bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex items-center gap-3 hover:border-b-2 hover:border-b-[#b81120] transition-all" data-id={link.id}>
@@ -186,11 +185,11 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
         <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
           <div class="flex items-center gap-2 mb-6">
             <span class="material-symbols-outlined text-[#b81120]">nfc</span>
-            <h2 class="text-xl font-bold">Your NFC Cards</h2>
+            <h2 class="text-xl font-bold">Tus Tarjetas NFC</h2>
           </div>
           
           {userDevices.length === 0 ? (
-            <p class="text-sm text-slate-500 italic">No physical cards claimed yet.</p>
+            <p class="text-sm text-slate-500 italic">Aún no se han reclamado tarjetas físicas.</p>
           ) : (
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {userDevices.map(device => {
@@ -205,9 +204,9 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
                   </div>
                   
                   <div>
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">Routes to Profile:</label>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Dirige al Perfil:</label>
                     <select class="device-profile-select w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-[#b81120] focus:border-[#b81120] block p-2 outline-none cursor-pointer" data-device-id={device.id}>
-                      <option value="">-- Unassigned --</option>
+                      <option value="">-- Sin asignar --</option>
                       {userProfiles.map(p => (
                         <option value={p.id} selected={p.id === device.profileId}>@{p.username}</option>
                       ))}
@@ -218,7 +217,7 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
                   {assignedProfile ? (
                     <div class="bg-slate-50 border border-slate-100 rounded-lg p-3 flex items-center justify-between group">
                       <div class="flex flex-col overflow-hidden">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Public Link</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Enlace Público</span>
                         <a href={`/p/${assignedProfile.username}`} target="_blank" class="text-xs text-[#b81120] font-semibold truncate hover:underline">
                           links.smarti.com.co/p/{assignedProfile.username}
                         </a>
@@ -230,7 +229,7 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
                   ) : (
                     <div class="bg-amber-50 border border-amber-100 rounded-lg p-3 flex items-center gap-2">
                       <span class="material-symbols-outlined text-amber-500 text-[18px]">warning</span>
-                      <span class="text-xs font-semibold text-amber-700">Card is sleeping</span>
+                      <span class="text-xs font-semibold text-amber-700">La tarjeta está en reposo</span>
                     </div>
                   )}
 
@@ -245,15 +244,15 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
     <nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center py-2 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] border-t border-slate-200 rounded-t-2xl">
       <a class="flex flex-col items-center justify-center bg-red-50 text-[#b81120] rounded-xl px-4 py-1" href="#">
         <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
-        <span class="text-[10px] font-bold mt-1">Profile</span>
+        <span class="text-[10px] font-bold mt-1">Perfil</span>
       </a>
       <a class="flex flex-col items-center justify-center text-slate-500 px-4 py-1" href="#links">
         <span class="material-symbols-outlined">link</span>
-        <span class="text-[10px] font-bold mt-1">Links</span>
+        <span class="text-[10px] font-bold mt-1">Enlaces</span>
       </a>
       <a class="flex flex-col items-center justify-center text-slate-500 px-4 py-1" href="#devices-section">
         <span class="material-symbols-outlined">nfc</span>
-        <span class="text-[10px] font-bold mt-1">Devices</span>
+        <span class="text-[10px] font-bold mt-1">Dispositivos</span>
       </a>
     </nav>
     
@@ -271,7 +270,7 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
       await fetch('/api/auth/logout', { method: 'POST' });
       window.location.href = '/login';
     } catch {
-      alert('Failed to log out.');
+      alert('Error al cerrar sesión.');
     }
   });
 
@@ -293,16 +292,16 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
           // ADDED: Instantly refresh the page to update the public link UI below it!
           window.location.reload();
         } else {
-          alert('Failed to update device routing.');
+          alert('Error al actualizar la ruta del dispositivo.');
         }
       } catch {
-        alert('Network error while updating device.');
+        alert('Error de red al actualizar el dispositivo.');
       }
     });
   });
   
   document.getElementById('new-profile-btn')?.addEventListener('click', async () => {
-    const username = prompt("Enter a unique username for your new profile (e.g., mateo-work):");
+    const username = prompt("Introduce un nombre de usuario único para tu nuevo perfil (ej., mateo-work):");
     if (!username || username.trim() === '') return;
 
     try {
@@ -316,10 +315,10 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
       if (res.ok) {
         window.location.href = `?p=${result.id}`; 
       } else {
-        alert(result.error || 'Failed to create profile. Username might be taken.');
+        alert(result.error || 'Error al crear el perfil. El nombre de usuario podría estar en uso.');
       }
     } catch {
-      alert('Network error while creating profile');
+      alert('Error de red al crear el perfil');
     }
   });
 
@@ -367,7 +366,7 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
             body: JSON.stringify(updates)
           });
         } catch {
-          alert('Failed to save new order.');
+          alert('Error al guardar el nuevo orden.');
         }
       }
     });
@@ -387,9 +386,9 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
         body: JSON.stringify(payload)
       });
       if (res.ok) window.location.reload();
-      else alert('Failed to save link');
+      else alert('Error al guardar el enlace');
     } catch {
-      alert('Network error');
+      alert('Error de red');
     }
   });
 
@@ -401,7 +400,7 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
       urlInput.value = target.dataset.url || '';
       selectIcon(target.dataset.icon || 'language');
       
-      if (submitText) submitText.textContent = 'Save';
+      if (submitText) submitText.textContent = 'Guardar';
       if (submitIcon) submitIcon.textContent = 'save';
       addLinkForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
@@ -409,14 +408,14 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
 
   document.querySelectorAll('.delete-link-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
-      if (!confirm('Are you sure you want to delete this link?')) return;
+      if (!confirm('¿Estás seguro de que deseas eliminar este enlace?')) return;
       const linkId = e.currentTarget.dataset.id;
       try {
         const res = await fetch(`/api/links?id=${linkId}&profileId=${ACTIVE_PROFILE_ID}`, { method: 'DELETE' });
         if (res.ok) window.location.reload();
-        else alert('Failed to delete link');
+        else alert('Error al eliminar el enlace');
       } catch {
-        alert('Network error');
+        alert('Error de red');
       }
     });
   });
@@ -438,10 +437,10 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
         window.location.reload();
       } else {
         const result = await res.json();
-        alert(result.error || 'Failed to save profile');
+        alert(result.error || 'Error al guardar el perfil');
       }
     } catch {
-      alert('Network error while saving profile');
+      alert('Error de red al guardar el perfil');
     }
   });
 
@@ -468,9 +467,9 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ avatarUrl: base64Avatar, profileId: ACTIVE_PROFILE_ID })
           });
-          if (!res.ok) alert('Failed to save avatar');
+          if (!res.ok) alert('Error al guardar el avatar');
         } catch {
-          alert('Network error while saving avatar');
+          alert('Error de red al guardar el avatar');
         }
       };
       img.src = event.target?.result;
