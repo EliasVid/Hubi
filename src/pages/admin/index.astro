@@ -1,16 +1,14 @@
+---
 // src/pages/admin/index.astro
 import Layout from '../../layouts/Layout.astro';
 import { drizzle } from 'drizzle-orm/d1';
 import { env } from 'cloudflare:workers';
-import { sessions, profiles, links, devices } from '../../db/schema';
+import { profiles, links, devices } from '../../db/schema';
 import { asc, eq } from 'drizzle-orm';
-
-const sessionToken = Astro.cookies.get('nfc_hub_session')?.value;
-if (!sessionToken) return Astro.redirect('/login');
+import { getValidSession } from '../../lib/auth';
 
 const db = drizzle(env.DB);
-const sessionResult = await db.select().from(sessions).where(eq(sessions.tokenHash, sessionToken)).limit(1);
-const session = sessionResult[0];
+const session = await getValidSession(Astro.cookies, db);
 if (!session) return Astro.redirect('/login');
 
 const userProfiles = await db.select().from(profiles).where(eq(profiles.userId, session.userId));

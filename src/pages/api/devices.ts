@@ -3,17 +3,14 @@ import type { APIRoute } from 'astro';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq, and } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
-import { sessions, devices, profiles } from '../../db/schema';
+import { devices, profiles } from '../../db/schema';
+import { getValidSession } from '../../lib/auth';
 
 export const PATCH: APIRoute = async ({ request, cookies }) => {
   const db = drizzle(env.DB);
-  
-  // Verify User Session
-  const sessionToken = cookies.get('nfc_hub_session')?.value;
-  if (!sessionToken) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
-  const sessionResult = await db.select().from(sessions).where(eq(sessions.tokenHash, sessionToken)).limit(1);
-  const sessionUser = sessionResult[0];
+  // Verify User Session (checks token hash + expiry)
+  const sessionUser = await getValidSession(cookies, db);
   if (!sessionUser) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
   // Parse Request Data
@@ -34,6 +31,7 @@ export const PATCH: APIRoute = async ({ request, cookies }) => {
       
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 400 });
+    console.error("Device update error:", e?.message || e);
+    return new Response(JSON.stringify({ error: "Failed to update device" }), { status: 400 });
   }
 };
