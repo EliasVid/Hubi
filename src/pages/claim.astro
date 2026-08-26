@@ -1,3 +1,4 @@
+---
 // src/pages/claim.astro
 import Layout from '../layouts/Layout.astro';
 import { drizzle } from 'drizzle-orm/d1';
@@ -44,19 +45,23 @@ if (sessionToken) {
           <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
             <label class="block text-sm font-semibold text-slate-700 mb-2">Vincular esta tarjeta al perfil:</label>
             
-            {userProfiles.length === 1 ? (
+            {/* CORRECCIÓN: Evitamos ternarios anidados separando la lógica con && */}
+            {userProfiles.length === 1 && (
               <>
                 <p class="text-[#b81120] font-bold text-lg">@{userProfiles[0].username}</p>
                 <input type="hidden" id="claim-profile-id" value={userProfiles[0].id} />
               </>
-            ) : (
+            )}
+
+            {userProfiles.length > 1 && (
               <select id="claim-profile-id" class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-[#b81120] focus:border-[#b81120] block p-2.5 outline-none font-bold">
                 {userProfiles.map(p => (
-                  <option value={p.id}>@{p.username} {p.displayName ? `(${p.displayName})` : ''}</option>
+                  <option value={p.id}>@{p.username} {p.displayName ? '(' + p.displayName + ')' : ''}</option>
                 ))}
               </select>
             )}
           </div>
+          
           <button id="claim-btn" data-device={deviceId} class="w-full bg-[#b81120] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-opacity flex justify-center items-center gap-2">
             Reclamar Tarjeta Ahora
           </button>
@@ -73,9 +78,9 @@ if (sessionToken) {
   </div>
 </Layout>
 
-<script>
-  const claimBtn = document.getElementById('claim-btn');
-  const profileSelect = document.getElementById('claim-profile-id') as HTMLInputElement | HTMLSelectElement;
+<script lang="ts">
+  const claimBtn = document.getElementById('claim-btn') as HTMLButtonElement | null;
+  const profileSelect = document.getElementById('claim-profile-id') as HTMLInputElement | HTMLSelectElement | null;
   
   claimBtn?.addEventListener('click', async (e) => {
     const target = e.currentTarget as HTMLButtonElement;
@@ -94,10 +99,17 @@ if (sessionToken) {
         body: JSON.stringify({ deviceId, profileId })
       });
       
-      if (res.ok) window.location.href = '/admin';
-      else { alert('Error al reclamar la tarjeta.'); target.disabled = false; target.innerHTML = 'Reclamar Tarjeta Ahora'; }
+      if (res.ok) {
+        window.location.href = '/admin';
+      } else { 
+        alert('Error al reclamar la tarjeta.'); 
+        target.disabled = false; 
+        target.innerHTML = 'Reclamar Tarjeta Ahora'; 
+      }
     } catch {
-      alert('Error de red.'); target.disabled = false; target.innerHTML = 'Reclamar Tarjeta Ahora';
+      alert('Error de red.'); 
+      target.disabled = false; 
+      target.innerHTML = 'Reclamar Tarjeta Ahora';
     }
   });
 </script>
