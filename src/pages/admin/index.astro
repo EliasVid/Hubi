@@ -1,3 +1,4 @@
+---
 // src/pages/admin/index.astro
 import Layout from '../../layouts/Layout.astro';
 import { drizzle } from 'drizzle-orm/d1';
@@ -193,7 +194,6 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
           ) : (
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {userDevices.map(device => {
-                // Find out which profile this specific card is pointing to right now
                 const assignedProfile = userProfiles.find(p => p.id === device.profileId);
                 
                 return (
@@ -213,7 +213,6 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
                     </select>
                   </div>
 
-                  {/* VISUAL INDICATOR OF THE PUBLIC LINK */}
                   {assignedProfile ? (
                     <div class="bg-slate-50 border border-slate-100 rounded-lg p-3 flex items-center justify-between group">
                       <div class="flex flex-col overflow-hidden">
@@ -289,7 +288,6 @@ const userDevices = await db.select().from(devices).where(eq(devices.userId, ses
         });
         
         if (res.ok) {
-          // ADDED: Instantly refresh the page to update the public link UI below it!
           window.location.reload();
         } else {
           alert('Error al actualizar la ruta del dispositivo.');
