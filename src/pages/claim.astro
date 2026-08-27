@@ -79,18 +79,26 @@ if (sessionToken) {
 </Layout>
 
 <script lang="ts">
-  const claimBtn = document.getElementById('claim-btn') as HTMLButtonElement | null;
-  const profileSelect = document.getElementById('claim-profile-id') as HTMLInputElement | HTMLSelectElement | null;
-  
-  claimBtn?.addEventListener('click', async (e) => {
-    const target = e.currentTarget as HTMLButtonElement;
-    const deviceId = target.dataset.device;
+  document.addEventListener('click', async (e) => {
+    const target = e.target as HTMLElement;
+    const claimBtn = target.closest('#claim-btn') as HTMLButtonElement | null;
+    
+    if (!claimBtn) return;
+    
+    e.preventDefault(); // Evitamos comportamientos raros del botón
+
+    const deviceId = claimBtn.dataset.device;
+    const profileSelect = document.getElementById('claim-profile-id') as HTMLInputElement | HTMLSelectElement | null;
     const profileId = profileSelect?.value;
 
-    if (!profileId) return alert('Selecciona un perfil primero.');
+    if (!profileId) {
+      alert('Selecciona un perfil primero.');
+      return;
+    }
     
-    target.disabled = true;
-    target.innerHTML = 'Reclamando...';
+    const originalText = claimBtn.innerHTML;
+    claimBtn.disabled = true;
+    claimBtn.innerHTML = 'Reclamando...';
 
     try {
       const res = await fetch('/api/claim', {
@@ -100,16 +108,19 @@ if (sessionToken) {
       });
       
       if (res.ok) {
+        // Redirige al admin si todo salió bien
         window.location.href = '/admin';
       } else { 
-        alert('Error al reclamar la tarjeta.'); 
-        target.disabled = false; 
-        target.innerHTML = 'Reclamar Tarjeta Ahora'; 
+        const result = await res.json();
+        alert(result.error || 'Error al reclamar la tarjeta.'); 
+        claimBtn.disabled = false; 
+        claimBtn.innerHTML = originalText; 
       }
-    } catch {
-      alert('Error de red.'); 
-      target.disabled = false; 
-      target.innerHTML = 'Reclamar Tarjeta Ahora';
+    } catch (err) {
+      console.error(err);
+      alert('Error de red al intentar conectar con el servidor.'); 
+      claimBtn.disabled = false; 
+      claimBtn.innerHTML = originalText;
     }
   });
 </script>
