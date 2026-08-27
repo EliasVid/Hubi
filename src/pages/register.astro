@@ -113,7 +113,9 @@ import Layout from '../layouts/Layout.astro';
         // Show success message and redirect after 1.5 seconds
         if (successText) successText.classList.remove('hidden');
         setTimeout(() => {
-          window.location.href = '/login';
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectUrl = urlParams.get('redirect') || '/admin';
+          window.location.href = redirectUrl;
         }, 1500);
       } else {
         const result = await res.json() as { error?: string };

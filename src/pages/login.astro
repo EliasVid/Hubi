@@ -89,7 +89,9 @@ import Layout from '../layouts/Layout.astro';
       });
 
       if (res.ok) {
-        window.location.href = '/admin';
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect') || '/admin';
+        window.location.href = redirectUrl;
       } else {
         const result = await res.json() as { error?: string };
         if (errorText) {

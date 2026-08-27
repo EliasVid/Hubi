@@ -68,8 +68,8 @@ if (sessionToken) {
       ) : (
         <div class="space-y-3">
           <p class="text-sm font-semibold text-amber-600 bg-amber-50 py-2 px-4 rounded-lg mb-4">Por favor, inicia sesión para reclamar esta tarjeta.</p>
-          <a href="/login" class="block w-full bg-[#b81120] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-opacity cursor-pointer">Iniciar Sesión</a>
-          <a href="/register" class="block w-full bg-white border border-slate-200 text-slate-700 py-3.5 rounded-xl font-bold hover:bg-slate-50 transition-colors cursor-pointer">Crear una Cuenta</a>
+          <a href={`/login?redirect=/claim?id=${deviceId}`} class="block w-full bg-[#b81120] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-opacity text-center cursor-pointer">Iniciar Sesión</a>
+          <a href={`/register?redirect=/claim?id=${deviceId}`} class="block w-full bg-white border border-slate-200 text-slate-700 py-3.5 rounded-xl font-bold hover:bg-slate-50 transition-colors text-center cursor-pointer">Crear una Cuenta</a>
         </div>
       )}
 
