@@ -45,7 +45,6 @@ if (sessionToken) {
           <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
             <label class="block text-sm font-semibold text-slate-700 mb-2">Vincular esta tarjeta al perfil:</label>
             
-            {/* CORRECCIÓN: Evitamos ternarios anidados separando la lógica con && */}
             {userProfiles.length === 1 && (
               <>
                 <p class="text-[#b81120] font-bold text-lg">@{userProfiles[0].username}</p>
@@ -62,15 +61,15 @@ if (sessionToken) {
             )}
           </div>
           
-          <button id="claim-btn" data-device={deviceId} class="w-full bg-[#b81120] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-opacity flex justify-center items-center gap-2">
+          <button id="claim-btn" data-device={deviceId} class="w-full bg-[#b81120] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-opacity flex justify-center items-center gap-2 cursor-pointer">
             Reclamar Tarjeta Ahora
           </button>
         </div>
       ) : (
         <div class="space-y-3">
           <p class="text-sm font-semibold text-amber-600 bg-amber-50 py-2 px-4 rounded-lg mb-4">Por favor, inicia sesión para reclamar esta tarjeta.</p>
-          <a href="/login" class="block w-full bg-[#b81120] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-opacity">Iniciar Sesión</a>
-          <a href="/register" class="block w-full bg-white border border-slate-200 text-slate-700 py-3.5 rounded-xl font-bold hover:bg-slate-50 transition-colors">Crear una Cuenta</a>
+          <a href="/login" class="block w-full bg-[#b81120] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-opacity cursor-pointer">Iniciar Sesión</a>
+          <a href="/register" class="block w-full bg-white border border-slate-200 text-slate-700 py-3.5 rounded-xl font-bold hover:bg-slate-50 transition-colors cursor-pointer">Crear una Cuenta</a>
         </div>
       )}
 
@@ -78,49 +77,48 @@ if (sessionToken) {
   </div>
 </Layout>
 
-<script lang="ts">
-  document.addEventListener('click', async (e) => {
-    const target = e.target as HTMLElement;
-    const claimBtn = target.closest('#claim-btn') as HTMLButtonElement | null;
-    
-    if (!claimBtn) return;
-    
-    e.preventDefault(); // Evitamos comportamientos raros del botón
+<script>
+  const claimBtn = document.getElementById('claim-btn');
+  const profileSelect = document.getElementById('claim-profile-id');
 
-    const deviceId = claimBtn.dataset.device;
-    const profileSelect = document.getElementById('claim-profile-id') as HTMLInputElement | HTMLSelectElement | null;
-    const profileId = profileSelect?.value;
+  if (claimBtn) {
+    claimBtn.addEventListener('click', async () => {
+      const deviceId = claimBtn.getAttribute('data-device');
+      const profileId = profileSelect ? profileSelect.value : null;
 
-    if (!profileId) {
-      alert('Selecciona un perfil primero.');
-      return;
-    }
-    
-    const originalText = claimBtn.innerHTML;
-    claimBtn.disabled = true;
-    claimBtn.innerHTML = 'Reclamando...';
-
-    try {
-      const res = await fetch('/api/claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceId, profileId })
-      });
-      
-      if (res.ok) {
-        // Redirige al admin si todo salió bien
-        window.location.href = '/admin';
-      } else { 
-        const result = await res.json();
-        alert(result.error || 'Error al reclamar la tarjeta.'); 
-        claimBtn.disabled = false; 
-        claimBtn.innerHTML = originalText; 
+      if (!profileId) {
+        alert('Selecciona un perfil primero.');
+        return;
       }
-    } catch (err) {
-      console.error(err);
-      alert('Error de red al intentar conectar con el servidor.'); 
-      claimBtn.disabled = false; 
-      claimBtn.innerHTML = originalText;
-    }
-  });
+      
+      const originalText = claimBtn.innerHTML;
+      claimBtn.setAttribute('disabled', 'true');
+      claimBtn.innerHTML = 'Reclamando...';
+      claimBtn.style.opacity = '0.7';
+
+      try {
+        const res = await fetch('/api/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId, profileId })
+        });
+        
+        if (res.ok) {
+          window.location.href = '/admin';
+        } else { 
+          const result = await res.json();
+          alert(result.error || 'Error al reclamar la tarjeta.'); 
+          claimBtn.removeAttribute('disabled');
+          claimBtn.innerHTML = originalText;
+          claimBtn.style.opacity = '1';
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error de red al intentar conectar con el servidor.'); 
+        claimBtn.removeAttribute('disabled');
+        claimBtn.innerHTML = originalText;
+        claimBtn.style.opacity = '1';
+      }
+    });
+  }
 </script>
