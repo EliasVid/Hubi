@@ -18,9 +18,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const { deviceId, profileId } = await request.json();
   if (!deviceId || !profileId) return new Response(JSON.stringify({ error: "Missing data" }), { status: 400 });
 
-  // Security Check: Make sure they own the profile they are linking to!
+  // Security Check 1: Make sure they own the profile they are linking to
   const profileResult = await db.select().from(profiles).where(and(eq(profiles.id, profileId), eq(profiles.userId, session.userId))).limit(1);
   if (!profileResult[0]) return new Response(JSON.stringify({ error: "Profile unauthorized" }), { status: 403 });
+
+  // Security Check 2: PREVENT HIJACKING - Ensure the device exists and is NOT already claimed
+  const deviceResult = await db.select().from(devices).where(eq(devices.id, deviceId)).limit(1);
+  const device = deviceResult[0];
+  
+  if (!device) return new Response(JSON.stringify({ error: "Device not found" }), { status: 404 });
+  if (device.isClaimed) return new Response(JSON.stringify({ error: "Device has already been claimed" }), { status: 409 });
 
   try {
     await db.update(devices)
